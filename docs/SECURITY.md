@@ -2,18 +2,12 @@
 
 ## Threat model
 
-`trysac-codeowners-gen` is a pure library without I/O. The main risks are:
+`trysac-codeowners-gen` is a pure Python library without network I/O or subprocess calls. The primary threats are:
 
-- **Supply chain**: a compromised dependency or CI action. Mitigation: no runtime dependencies,
-  Dependabot weekly updates, actions pinned to major versions, minimal workflow permissions.
-- **Leaked secrets**: tokens committed by mistake. Mitigation: `gitleaks` runs in the local gates
-  and in CI; `.env` files are git-ignored.
-- **Untrusted input**: callers may pass hostile strings. Mitigation: validate input and fail with
-  explicit exceptions; never `eval`, `exec` or deserialize untrusted data.
+- **Resource Exhaustion**: The tool parses potentially large git log files. This is defended by an enforced `max_bytes` limit of 10,000,000 bytes in `parse_log`, which prevents memory exhaustion.
+- **Input Sanitization**: Callers may pass malicious strings. This is defended by validating inputs (e.g., regex checks on handles) and raising explicit `CodeownersError` exceptions with error codes, rather than attempting to process potentially dangerous data.
+- **Error Feedback**: Error messages truncate at 200 characters to prevent log injection or memory issues when reporting malformed input.
 
-## Publishing
-
-Releases are published to PyPI with trusted publishing (OIDC) when available, never with a
-long-lived token stored in the repository.
+This tool does not defend against compromised dependencies or unauthorized access to the environment where the input logs are generated.
 
 To report a vulnerability, see [SECURITY.md](../SECURITY.md).
