@@ -1,29 +1,27 @@
 # Architecture
 
-## Purpose
+## Overview
 
-`trysac-codeowners-gen` is a small, dependency-free Python library: Suggest a CODEOWNERS file from git log numstat output, weighting authors by changed lines per directory, with a handle map and deterministic output
+`codeowners-gen` ingests git log text exports and produces deterministic `CODEOWNERS` rules.
 
-## Shape
+## Core Components
 
-```text
-caller code --> codeowners_gen (public API in __init__.py)
-                    |
-                    +-- pure functions, no I/O, no global state
-```
+1. **Parser (`parse_log`)**: 
+   - Splits input on the ASCII record separator `\x1e`.
+   - Parses lines in `added\tdeleted\tpath` format.
+   - Handles rename syntaxes `prefix{old => new}suffix` and `old => new`.
+   - Converts binary changes (`-` / `-`) to 1 added line.
+   - Strictly rejects invalid input or inputs exceeding `max_bytes`.
 
-- **Public API**: the names listed in `__all__` of `src/codeowners_gen/__init__.py`. Anything else is
-  internal and may change without a major version.
-- **Errors**: invalid input raises built-in exceptions (`ValueError`, `TypeError`) with a clear
-  message; the library never prints or exits.
-- **Side effects**: none. If a feature needs I/O, isolate it in its own module behind a small
-  interface and record the choice in an ADR.
+2. **Suggestion Engine (`suggest_owners`)**:
+   - Weights authors by total additions and deletions.
+   - Aggregates weights for root (`*`) and directories up to specified `depth`.
+   - Maps author emails to GitHub handles or team tags.
+   - Filters out bot accounts (matching `[bot]` by default).
+   - Evaluates share `owner_weight / total_weight >= min_share`.
+   - Breaks ties deterministically by weight descending, then handle ascending.
+   - Skips directories containing spaces or starting with `#`.
 
-## Quality contract
-
-`scripts/check.py` is the single definition of the gates; `fabrica.json` tells the factory and CI
-how to run it. See [TESTING.md](TESTING.md).
-
-## Decisions
-
-Architecture decisions are recorded in [decisions/](decisions/) as numbered ADRs.
+3. **Renderer (`render`)**:
+   - Outputs standard GitHub `CODEOWNERS` syntax.
+   - Emits root rule `*` first, followed by directories in ascending order (guaranteeing deeper paths override shallower parents).
