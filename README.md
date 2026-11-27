@@ -1,7 +1,6 @@
 # codeowners-gen
 
 [![CI](https://github.com/Trysac/u176-codeowners-gen/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u176-codeowners-gen/actions)
-[![PyPI](https://img.shields.io/pypi/v/trysac-codeowners-gen.svg)](https://pypi.org/project/trysac-codeowners-gen/)
 
 Suggest a `CODEOWNERS` file from `git log --numstat` output, weighting authors by changed lines per directory, with GitHub handle mapping and deterministic ordering.
 
